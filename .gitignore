@@ -1,0 +1,17 @@
+# Environment files (never commit secrets)
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# Editor/OS clutter
+.vscode/
+.idea/
+.DS_Store
