@@ -4,13 +4,10 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
+import LoginPage from "./LoginPage";
+
 function App() {
-  return (
-    <div>
-      <h1>Preserve AI</h1>
-      <p>Frontend is running.</p>
-    </div>
-  )
+  return <LoginPage />;
 }
 
-export default App
+export default App;
