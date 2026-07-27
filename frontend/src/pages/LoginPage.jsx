@@ -1,21 +1,23 @@
+// frontend/src/pages/LoginPage.jsx
 import { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
     try {
-      const response = await axios.post("http://localhost:8000/auth/login", {
-        email: email,
-        password: password,
-      });
-      console.log("Login successful, token:", response.data.access_token);
+      await login(email, password);
+      navigate("/dashboard");
     } catch (err) {
       setError("Invalid email or password");
       console.error(err);
