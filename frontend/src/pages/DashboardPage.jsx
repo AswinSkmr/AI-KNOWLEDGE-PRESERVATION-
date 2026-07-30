@@ -9,6 +9,7 @@ function DashboardPage() {
       <p>
         Welcome, {user?.full_name} ({user?.role})
       </p>
+      {user?.role === "admin" && <a href="/admin/users">Manage Users</a>}
       <button onClick={logout}>Logout</button>
     </div>
   );

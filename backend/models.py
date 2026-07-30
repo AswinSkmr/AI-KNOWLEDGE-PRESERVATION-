@@ -1,21 +1,21 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime, func, ForeignKey
+from sqlalchemy import Column, String, DateTime, func, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from database import Base
-https://github.com/AswinSkmr/AI-KNOWLEDGE-PRESERVATION-
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name = Column(String(150), nullable=False)
+    university_id = Column(String(50), unique=True, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False)
-
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     student_profile = relationship(

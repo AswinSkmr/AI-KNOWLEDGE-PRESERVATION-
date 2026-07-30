@@ -1,0 +1,6 @@
+university_id,full_name,email,department,batch_year,semester
+S-301,Meera Pillai,meera@college.edu,CS,2024,3
+S-302,Arjun Das,arjun@college.edu,CS,2024,3
+S-301,Duplicate Roll Number,another@college.edu,CS,2024,3
+S-303,,blank-name@college.edu,CS,2024,3
+S-304,Bad Email,not-an-email,CS,2024,3

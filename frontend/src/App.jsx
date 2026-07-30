@@ -8,11 +8,18 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminStudentImportPage from "./pages/AdminStudentImportPage";
 
-function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+
+function ProtectedRoute({ children, adminOnly = false }) {
+  const { isAuthenticated, user } = useAuth();
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  if (adminOnly && user.role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 }
@@ -29,8 +36,26 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminUsersPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      
+      <Route
+        path="/admin/students/import"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminStudentImportPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
+    
   );
 }
 

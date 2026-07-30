@@ -1,4 +1,7 @@
-from pydantic import BaseModel, EmailStr
+import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
 
 class LoginRequest(BaseModel):
@@ -9,3 +12,46 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class UserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    full_name: str
+    email: str
+    role: str
+    is_active: bool
+    created_at: datetime
+
+
+class StudentCsvRow(BaseModel):
+    university_id: str
+    full_name: str
+    email: EmailStr
+    department: str | None = None
+    batch_year: str | None = None
+    semester: str | None = None
+
+    @field_validator("university_id", "full_name")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("must not be blank")
+        return value.strip()
+
+
+class ImportRowResult(BaseModel):
+    row_number: int
+    status: str  # "created" | "skipped" | "error"
+    email: str | None = None
+    detail: str
+    temporary_password: str | None = None
+
+
+class ImportSummary(BaseModel):
+    total_rows: int
+    created_count: int
+    skipped_count: int
+    error_count: int
+    results: list[ImportRowResult]

@@ -1,0 +1,9 @@
+[33m18078b9[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m merge: resolve README conflict, keep project README
+[33m4d5c5c9[m feat(db): add student_profiles and staff_profiles with one-to-one user relationship
+[33mde94405[m feat(frontend): add persistent auth via Context, localStorage, and protected routing
+[33m0b2db86[m feat(frontend): add login form wired to backend auth endpoint
+[33mc13af79[m feat(frontend): scaffold React app with Vite
+[33m32024c1[m feat(backend): configure SQLAlchemy engine and session
+[33m89d279f[m feat(backend): add FastAPI hello-world endpoint
+[33m94db7eb[m chore: initialize project structure
+[33md42a3cd[m Initial commit

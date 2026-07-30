@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from auth import router as auth_router
 from users import router as users_router
+from students import router as students_router
+
 
 app = FastAPI(title="Preserve AI")
 
@@ -18,6 +20,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(students_router)
 
 
 
