@@ -6,11 +6,15 @@ import './App.css'
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminStudentImportPage from "./pages/AdminStudentImportPage";
 import AdminStaffPage from "./pages/AdminStaffPage";
+import StaffDashboardPage from "./pages/StaffDashboardPage";
+
 
 
 
@@ -30,6 +34,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
       <Route
         path="/dashboard"
         element={
@@ -38,37 +43,46 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
-        path="/admin/users"
+        path="/staff/dashboard"
         element={
-          <ProtectedRoute adminOnly>
-            <AdminUsersPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      
-      <Route
-        path="/admin/students/import"
-        element={
-          <ProtectedRoute adminOnly>
-            <AdminStudentImportPage />
+          <ProtectedRoute allowedRoles={["staff", "admin"]}>
+            <StaffDashboardPage />
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/admin/staff"
+        path="/admin/users"
         element={
-        <ProtectedRoute adminOnly>
-          <AdminStaffPage />
-        </ProtectedRoute>
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminUsersPage />
+          </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/students/import"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminStudentImportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/staff"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminStaffPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
-    
   );
 }
+
 
 function App() {
   return (

@@ -63,3 +63,8 @@ def deactivate_user(
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
+
+
+@router.get("/staff/dashboard-check")
+def staff_dashboard_check(current_user: User = Depends(require_role("staff", "admin"))):
+    return {"message": f"Welcome, staff member {current_user.full_name}"}

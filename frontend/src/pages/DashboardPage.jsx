@@ -9,7 +9,18 @@ function DashboardPage() {
       <p>
         Welcome, {user?.full_name} ({user?.role})
       </p>
-      {user?.role === "admin" && <a href="/admin/users">Manage Users</a>}
+
+      {(user?.role === "staff" || user?.role === "admin") && (
+        <p><a href="/staff/dashboard">Staff Dashboard</a></p>
+      )}
+      {user?.role === "admin" && (
+        <>
+          <p><a href="/admin/users">Manage Users</a></p>
+          <p><a href="/admin/students/import">Import Students</a></p>
+          <p><a href="/admin/staff">Manage Staff</a></p>
+        </>
+      )}
+
       <button onClick={logout}>Logout</button>
     </div>
   );
