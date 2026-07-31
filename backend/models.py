@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Boolean
+from sqlalchemy import Column, String, DateTime, func, ForeignKey, Boolean, Text, Integer, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -60,3 +60,33 @@ class StaffProfile(Base):
     employee_id = Column(String(50), nullable=True)
 
     user = relationship("User", back_populates="staff_profile")
+
+
+class Document(Base):
+    __tablename__ = "documents"
+
+    document_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+
+    document_type = Column(String(50), nullable=False, index=True)
+    category = Column(String(100), nullable=True, index=True)
+
+    file_name = Column(String(255), nullable=False)
+    original_file_name = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    mime_type = Column(String(100), nullable=False)
+
+    uploaded_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    status = Column(String(20), nullable=False, default="active", server_default="active")
+
+    uploader = relationship("User")
