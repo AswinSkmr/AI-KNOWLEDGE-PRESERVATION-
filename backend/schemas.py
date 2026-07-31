@@ -55,3 +55,37 @@ class ImportSummary(BaseModel):
     skipped_count: int
     error_count: int
     results: list[ImportRowResult]
+
+
+class StaffCreate(BaseModel):
+    university_id: str
+    full_name: str
+    email: EmailStr
+    department: str | None = None
+    designation: str | None = None
+    employee_id: str | None = None
+
+
+class StaffUpdate(BaseModel):
+    full_name: str | None = None
+    department: str | None = None
+    designation: str | None = None
+    employee_id: str | None = None
+
+
+class StaffRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    university_id: str
+    full_name: str
+    email: str
+    is_active: bool
+    department: str | None = None
+    designation: str | None = None
+    employee_id: str | None = None
+
+
+class StaffCreateResponse(BaseModel):
+    staff: StaffRead
+    temporary_password: str

@@ -10,6 +10,8 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminStudentImportPage from "./pages/AdminStudentImportPage";
+import AdminStaffPage from "./pages/AdminStaffPage";
+
 
 
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -52,6 +54,15 @@ function AppRoutes() {
           <ProtectedRoute adminOnly>
             <AdminStudentImportPage />
           </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/staff"
+        element={
+        <ProtectedRoute adminOnly>
+          <AdminStaffPage />
+        </ProtectedRoute>
         }
       />
     </Routes>
