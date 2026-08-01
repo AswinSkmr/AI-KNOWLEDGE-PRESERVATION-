@@ -16,6 +16,7 @@ import AdminStaffPage from "./pages/AdminStaffPage";
 import StaffDashboardPage from "./pages/StaffDashboardPage";
 import DocumentUploadPage from "./pages/DocumentUploadPage";
 import DocumentListPage from "./pages/DocumentListPage";
+import DocumentDetailPage from "./pages/DocumentDetailPage";
 
 
 
@@ -97,6 +98,16 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/documents/:id"
+        element={
+          <ProtectedRoute>
+            <DocumentDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
 
     </Routes>

@@ -86,7 +86,7 @@ class Document(Base):
         index=True,
     )
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
-
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
     status = Column(String(20), nullable=False, default="active", server_default="active")
 
     uploader = relationship("User")

@@ -1,0 +1,148 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "../api";
+import { useAuth } from "../context/AuthContext";
+
+function DocumentDetailPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [document, setDocument] = useState(null);
+  const [error, setError] = useState("");
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ title: "", description: "", category: "" });
+
+  async function loadDocument() {
+    setError("");
+    try {
+      const response = await api.get(`/documents/${id}`);
+      setDocument(response.data);
+      setEditForm({
+        title: response.data.title,
+        description: response.data.description || "",
+        category: response.data.category || "",
+      });
+    } catch (err) {
+      setError(err.response?.data?.detail || "Document not found");
+    }
+  }
+
+  useEffect(() => {
+    loadDocument();
+  }, [id]);
+
+  async function handleSaveEdit(event) {
+    event.preventDefault();
+    try {
+      await api.patch(`/documents/${id}`, editForm);
+      setIsEditing(false);
+      loadDocument();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to update document");
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete "${document.title}"? This can be undone by an administrator later, but it will disappear from all listings immediately.`)) {
+      return;
+    }
+    try {
+      await api.delete(`/documents/${id}`);
+      navigate("/documents");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to delete document");
+    }
+  }
+
+  async function handleDownload() {
+    const response = await api.get(`/documents/${id}/download`, { responseType: "blob" });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = window.document.createElement("a");
+    link.href = url;
+    link.download = document.original_file_name;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (!document) return <p>Loading...</p>;
+
+  const canEdit = user?.role === "admin";
+  const previewUrl = `${api.defaults.baseURL}/documents/${id}/preview`;
+
+  return (
+    <div>
+      <button onClick={() => navigate("/documents")}>← Back to list</button>
+
+      {isEditing ? (
+        <form onSubmit={handleSaveEdit}>
+          <div>
+            <label>Title</label>
+            <input
+              type="text"
+              value={editForm.title}
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <label>Description</label>
+            <textarea
+              value={editForm.description}
+              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            />
+          </div>
+          <div>
+            <label>Category</label>
+            <input
+              type="text"
+              value={editForm.category}
+              onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+            />
+          </div>
+          <button type="submit">Save</button>
+          <button type="button" onClick={() => setIsEditing(false)}>Cancel</button>
+        </form>
+      ) : (
+        <>
+          <h1>{document.title}</h1>
+          <p>{document.description || "No description provided."}</p>
+          <p>
+            <strong>Type:</strong> {document.document_type} &nbsp;
+            <strong>Category:</strong> {document.category || "—"} &nbsp;
+            <strong>Size:</strong> {(document.file_size / (1024 * 1024)).toFixed(2)} MB
+          </p>
+          <p>
+            <strong>Uploaded:</strong>{" "}
+            {new Date(document.uploaded_at).toLocaleString()}
+          </p>
+
+          <button onClick={handleDownload}>Download</button>
+          {canEdit && <button onClick={() => setIsEditing(true)}>Edit</button>}
+          {canEdit && (
+            <button onClick={handleDelete} style={{ color: "red" }}>
+              Delete
+            </button>
+          )}
+        </>
+      )}
+
+      {document.mime_type === "application/pdf" && (
+        <div style={{ marginTop: "1.5rem" }}>
+          <h3>Preview</h3>
+          <iframe
+            src={previewUrl}
+            title={document.title}
+            width="100%"
+            height="600"
+            style={{ border: "1px solid #ccc" }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default DocumentDetailPage;

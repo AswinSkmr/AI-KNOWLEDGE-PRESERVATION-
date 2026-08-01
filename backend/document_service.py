@@ -1,9 +1,11 @@
 import os
 import uuid
 import math
+from datetime import datetime, timezone
+
 from typing import Literal
 
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 
@@ -122,3 +124,45 @@ def list_documents(
         total_pages=total_pages,
         documents=documents,
     )
+
+
+def get_document_by_id(db: Session, document_id: uuid.UUID) -> Document:
+    document = (
+        db.query(Document)
+        .filter(Document.document_id == document_id, Document.status == "active")
+        .first()
+    )
+    if document is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    return document
+
+
+def update_document(db: Session, document_id: uuid.UUID, payload: "DocumentUpdate") -> Document:
+    document = get_document_by_id(db, document_id)
+
+    if payload.title is not None:
+        document.title = payload.title
+    if payload.description is not None:
+        document.description = payload.description
+    if payload.category is not None:
+        document.category = payload.category
+
+    db.commit()
+    db.refresh(document)
+    return document
+
+
+def soft_delete_document(db: Session, document_id: uuid.UUID) -> None:
+    document = get_document_by_id(db, document_id)
+    document.status = "deleted"
+    document.deleted_at = datetime.now(timezone.utc)
+    db.commit()
+
+
+def resolve_file_path(document: Document) -> str:
+    if not os.path.isfile(document.file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The file for this document is missing from storage",
+        )
+    return document.file_path

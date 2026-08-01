@@ -113,3 +113,9 @@ class PaginatedDocuments(BaseModel):
     page_size: int
     total_pages: int
     documents: list[DocumentRead]
+
+
+class DocumentUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    category: str | None = None
