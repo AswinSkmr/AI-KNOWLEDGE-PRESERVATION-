@@ -6,6 +6,8 @@ from auth import router as auth_router
 from users import router as users_router
 from students import router as students_router
 from staff import router as staff_router
+from documents import router as documents_router
+
 
 
 
@@ -24,6 +26,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(students_router)
 app.include_router(staff_router)
+app.include_router(documents_router)
 
 
 @app.get("/")

@@ -89,3 +89,19 @@ class StaffRead(BaseModel):
 class StaffCreateResponse(BaseModel):
     staff: StaffRead
     temporary_password: str
+
+
+class DocumentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    document_id: uuid.UUID
+    title: str
+    description: str | None = None
+    document_type: str
+    category: str | None = None
+    original_file_name: str
+    file_size: int
+    mime_type: str
+    uploaded_by: uuid.UUID
+    uploaded_at: datetime
+    status: str
