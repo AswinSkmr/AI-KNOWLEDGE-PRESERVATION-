@@ -1,10 +1,14 @@
 import os
 import uuid
+import math
+from typing import Literal
 
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
+from sqlalchemy import asc, desc
 
 from models import Document, User
+from schemas import PaginatedDocuments
 
 ALLOWED_MIME_TYPES = {"application/pdf"}
 ALLOWED_EXTENSION = ".pdf"
@@ -74,3 +78,47 @@ async def save_uploaded_document(
     db.refresh(document)
 
     return document
+
+
+SORTABLE_COLUMNS = {
+    "uploaded_at": Document.uploaded_at,
+    "title": Document.title,
+    "file_size": Document.file_size,
+}
+
+
+def list_documents(
+    db: Session,
+    page: int = 1,
+    page_size: int = 20,
+    document_type: str | None = None,
+    search: str | None = None,
+    sort_by: str = "uploaded_at",
+    sort_order: Literal["asc", "desc"] = "desc",
+) -> PaginatedDocuments:
+    query = db.query(Document).filter(Document.status == "active")
+
+    if document_type:
+        query = query.filter(Document.document_type == document_type)
+
+    if search:
+        query = query.filter(Document.title.ilike(f"%{search}%"))
+
+    total = query.count()
+
+    sort_column = SORTABLE_COLUMNS.get(sort_by, Document.uploaded_at)
+    order_func = desc if sort_order == "desc" else asc
+    query = query.order_by(order_func(sort_column))
+
+    offset = (page - 1) * page_size
+    documents = query.offset(offset).limit(page_size).all()
+
+    total_pages = math.ceil(total / page_size) if total > 0 else 1
+
+    return PaginatedDocuments(
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        documents=documents,
+    )

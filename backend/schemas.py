@@ -105,3 +105,11 @@ class DocumentRead(BaseModel):
     uploaded_by: uuid.UUID
     uploaded_at: datetime
     status: str
+
+
+class PaginatedDocuments(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    documents: list[DocumentRead]

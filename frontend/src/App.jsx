@@ -15,6 +15,7 @@ import AdminStudentImportPage from "./pages/AdminStudentImportPage";
 import AdminStaffPage from "./pages/AdminStaffPage";
 import StaffDashboardPage from "./pages/StaffDashboardPage";
 import DocumentUploadPage from "./pages/DocumentUploadPage";
+import DocumentListPage from "./pages/DocumentListPage";
 
 
 
@@ -88,7 +89,16 @@ function AppRoutes() {
         }
       />
 
+      <Route
+        path="/documents"
+        element={
+          <ProtectedRoute>
+            <DocumentListPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
     </Routes>
   );
 }
