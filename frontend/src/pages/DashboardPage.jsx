@@ -13,6 +13,11 @@ function DashboardPage() {
       {(user?.role === "staff" || user?.role === "admin") && (
         <p><a href="/staff/dashboard">Staff Dashboard</a></p>
       )}
+
+      {(user?.role === "admin" || user?.role === "staff") && (
+        <p><a href="/documents/upload">Upload Document</a></p>
+      )}
+
       {user?.role === "admin" && (
         <>
           <p><a href="/admin/users">Manage Users</a></p>

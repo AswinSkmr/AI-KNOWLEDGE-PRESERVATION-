@@ -14,6 +14,8 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminStudentImportPage from "./pages/AdminStudentImportPage";
 import AdminStaffPage from "./pages/AdminStaffPage";
 import StaffDashboardPage from "./pages/StaffDashboardPage";
+import DocumentUploadPage from "./pages/DocumentUploadPage";
+
 
 
 
@@ -74,6 +76,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminStaffPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/documents/upload"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "staff"]}>
+            <DocumentUploadPage />
           </ProtectedRoute>
         }
       />
