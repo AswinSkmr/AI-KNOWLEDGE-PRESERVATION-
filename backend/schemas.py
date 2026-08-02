@@ -119,3 +119,11 @@ class DocumentUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     category: str | None = None
+
+
+class DocumentExtractionResult(BaseModel):
+    document_id: uuid.UUID
+    text_extraction_status: str
+    page_count: int | None = None
+    extraction_error: str | None = None
+    extracted_text_preview: str | None = None

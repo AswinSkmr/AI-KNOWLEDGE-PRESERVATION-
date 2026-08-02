@@ -8,9 +8,15 @@ from typing import Literal
 
 from auth import get_db
 from deps import require_role, get_current_user
-from document_service import FileValidationError, save_uploaded_document, list_documents
+from document_service import FileValidationError, save_uploaded_document, list_documents, process_document_text_extraction
+from document_service import (
+    get_document_by_id,
+    resolve_file_path,
+    soft_delete_document,
+    update_document,
+)
 from models import User
-from schemas import DocumentRead, PaginatedDocuments, DocumentUpdate,    get_document_by_id, resolve_file_path, soft_delete_document, update_document 
+from schemas import DocumentRead, PaginatedDocuments, DocumentUpdate, DocumentExtractionResult
 
 
 router = APIRouter()
@@ -127,3 +133,19 @@ def delete_document(
     _admin: User = Depends(require_role("admin")),
 ):
     soft_delete_document(db, document_id)
+
+
+@router.post("/documents/{document_id}/extract-text", response_model=DocumentExtractionResult)
+def extract_document_text(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_role("admin")),
+):
+    document = process_document_text_extraction(db, document_id)
+    return DocumentExtractionResult(
+        document_id=document.document_id,
+        text_extraction_status=document.text_extraction_status,
+        page_count=document.page_count,
+        extraction_error=document.extraction_error,
+        extracted_text_preview=(document.extracted_text[:500] if document.extracted_text else None),
+    )

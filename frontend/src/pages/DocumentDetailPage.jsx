@@ -14,6 +14,8 @@ function DocumentDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "" });
 
+  const [previewBlobUrl, setPreviewBlobUrl] = useState(null);
+
   async function loadDocument() {
     setError("");
     try {
@@ -32,6 +34,24 @@ function DocumentDetailPage() {
   useEffect(() => {
     loadDocument();
   }, [id]);
+
+  useEffect(() => {
+    if (!document || document.mime_type !== "application/pdf") return;
+
+    let objectUrl;
+
+    api
+      .get(`/documents/${id}/preview`, { responseType: "blob" })
+      .then((response) => {
+        objectUrl = window.URL.createObjectURL(response.data);
+        setPreviewBlobUrl(objectUrl);
+      })
+      .catch(() => setPreviewBlobUrl(null));
+
+    return () => {
+      if (objectUrl) window.URL.revokeObjectURL(objectUrl);
+    };
+  }, [document, id]);
 
   async function handleSaveEdit(event) {
     event.preventDefault();
@@ -66,11 +86,25 @@ function DocumentDetailPage() {
     window.URL.revokeObjectURL(url);
   }
 
+  const [extraction, setExtraction] = useState(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  async function handleExtractText() {
+    setIsExtracting(true);
+    setExtraction(null);
+    try {
+      const response = await api.post(`/documents/${id}/extract-text`);
+      setExtraction(response.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Text extraction failed");
+    } finally {
+      setIsExtracting(false);
+    }
+  }
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (!document) return <p>Loading...</p>;
 
   const canEdit = user?.role === "admin";
-  const previewUrl = `${api.defaults.baseURL}/documents/${id}/preview`;
 
   return (
     <div>
@@ -126,19 +160,40 @@ function DocumentDetailPage() {
               Delete
             </button>
           )}
+          {canEdit && (
+            <button onClick={handleExtractText} disabled={isExtracting}>
+              {isExtracting ? "Extracting..." : "Extract Text"}
+            </button>
+          )}
+          {extraction && (
+            <div style={{ marginTop: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+              <p><strong>Status:</strong> {extraction.text_extraction_status}</p>
+              {extraction.page_count != null && <p><strong>Pages:</strong> {extraction.page_count}</p>}
+              {extraction.extraction_error && (
+                <p style={{ color: "orange" }}>{extraction.extraction_error}</p>
+              )}
+              {extraction.extracted_text_preview && (
+                <p><strong>Preview:</strong> {extraction.extracted_text_preview}...</p>
+              )}
+            </div>
+          )}
         </>
       )}
 
       {document.mime_type === "application/pdf" && (
         <div style={{ marginTop: "1.5rem" }}>
           <h3>Preview</h3>
-          <iframe
-            src={previewUrl}
-            title={document.title}
-            width="100%"
-            height="600"
-            style={{ border: "1px solid #ccc" }}
-          />
+          {previewBlobUrl ? (
+            <iframe
+              src={previewBlobUrl}
+              title={document.title}
+              width="100%"
+              height="600"
+              style={{ border: "1px solid #ccc" }}
+            />
+          ) : (
+            <p>Loading preview...</p>
+          )}
         </div>
       )}
     </div>

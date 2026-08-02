@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import api from "../api";
-
+import { useNavigate } from "react-router-dom";
 const DOCUMENT_TYPES = ["", "textbook", "project_report"];
 
 function DocumentListPage() {
+  const navigate = useNavigate();
+
   const [documents, setDocuments] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -104,17 +106,21 @@ function DocumentListPage() {
             </th>
           </tr>
         </thead>
-        <tbody>
-          {documents.map((doc) => (
-            <tr key={doc.document_id}>
-              <td>{doc.title}</td>
-              <td>{doc.document_type}</td>
-              <td>{doc.category || "—"}</td>
-              <td>{formatFileSize(doc.file_size)}</td>
-              <td>{new Date(doc.uploaded_at).toLocaleDateString()}</td>
-            </tr>
-          ))}
-        </tbody>
+         <tbody>
+  {documents.map((doc) => (
+    <tr
+      key={doc.document_id}
+      onClick={() => navigate(`/documents/${doc.document_id}`)}
+      style={{ cursor: "pointer" }}
+    >
+      <td>{doc.title}</td>
+      <td>{doc.document_type}</td>
+      <td>{doc.category || "—"}</td>
+      <td>{formatFileSize(doc.file_size)}</td>
+      <td>{new Date(doc.uploaded_at).toLocaleDateString()}</td>
+    </tr>
+  ))}
+</tbody>
       </table>
 
       <div style={{ marginTop: "1rem" }}>

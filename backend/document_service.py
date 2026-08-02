@@ -12,6 +12,8 @@ from sqlalchemy import asc, desc
 from models import Document, User
 from schemas import PaginatedDocuments
 
+from ai.extractor import extract_text_from_pdf
+
 ALLOWED_MIME_TYPES = {"application/pdf"}
 ALLOWED_EXTENSION = ".pdf"
 
@@ -166,3 +168,19 @@ def resolve_file_path(document: Document) -> str:
             detail="The file for this document is missing from storage",
         )
     return document.file_path
+
+
+def process_document_text_extraction(db: Session, document_id: uuid.UUID) -> Document:
+    document = get_document_by_id(db, document_id)
+
+    result = extract_text_from_pdf(document.file_path)
+
+    document.text_extraction_status = result.status
+    document.extracted_text = result.text or None
+    document.page_count = result.page_count
+    document.extraction_error = result.error
+    document.extracted_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(document)
+    return document

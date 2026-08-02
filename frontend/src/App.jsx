@@ -22,17 +22,7 @@ import DocumentDetailPage from "./pages/DocumentDetailPage";
 
 
 
-function ProtectedRoute({ children, adminOnly = false }) {
-  const { isAuthenticated, user } = useAuth();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  if (adminOnly && user.role !== "admin") {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return children;
-}
 
 function AppRoutes() {
   return (

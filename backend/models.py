@@ -78,7 +78,13 @@ class Document(Base):
     file_path = Column(String(500), nullable=False)
     file_size = Column(Integer, nullable=False)
     mime_type = Column(String(100), nullable=False)
-
+    extracted_text = Column(Text, nullable=True)
+    text_extraction_status = Column(
+        String(20), nullable=False, default="pending", server_default="pending"
+    )
+    page_count = Column(Integer, nullable=True)
+    extraction_error = Column(Text, nullable=True)
+    extracted_at = Column(DateTime(timezone=True), nullable=True)
     uploaded_by = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
