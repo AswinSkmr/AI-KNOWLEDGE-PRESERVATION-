@@ -22,6 +22,10 @@ function DocumentDetailPage() {
   const [summaries, setSummaries] = useState([]);
   const [isGeneratingSummaries, setIsGeneratingSummaries] = useState(false);
 
+  // Milestone 3
+  const [chunkCount, setChunkCount] = useState(null);
+  const [isChunking, setIsChunking] = useState(false);
+
   async function loadDocument() {
     setError("");
     try {
@@ -131,6 +135,19 @@ function DocumentDetailPage() {
     }
   }
 
+  // Milestone 3
+  async function handleGenerateChunks() {
+    setIsChunking(true);
+    try {
+      const response = await api.post(`/documents/${id}/generate-chunks`);
+      setChunkCount(response.data.chunk_count);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Chunking failed");
+    } finally {
+      setIsChunking(false);
+    }
+  }
+
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (!document) return <p>Loading...</p>;
 
@@ -201,6 +218,11 @@ function DocumentDetailPage() {
               {isGeneratingSummaries ? "Generating..." : "Generate Summaries"}
             </button>
           )}
+          {canEdit && (
+            <button onClick={handleGenerateChunks} disabled={isChunking}>
+              {isChunking ? "Chunking..." : "Chunk Document"}
+            </button>
+          )}
 
           {extraction && (
             <div style={{ marginTop: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
@@ -233,6 +255,10 @@ function DocumentDetailPage() {
                 </div>
               ))}
             </div>
+          )}
+
+          {chunkCount !== null && (
+            <p style={{ marginTop: "1rem" }}>Document split into {chunkCount} chunks.</p>
           )}
         </>
       )}

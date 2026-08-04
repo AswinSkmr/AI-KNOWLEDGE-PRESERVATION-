@@ -142,3 +142,18 @@ class SummaryRead(BaseModel):
 class DocumentSummariesResponse(BaseModel):
     document_id: uuid.UUID
     summaries: list[SummaryRead]
+
+
+class ChunkRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    chunk_id: uuid.UUID
+    chunk_index: int
+    chunk_text: str
+    char_count: int
+
+
+class DocumentChunksResponse(BaseModel):
+    document_id: uuid.UUID
+    chunk_count: int
+    chunks: list[ChunkRead]

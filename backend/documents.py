@@ -8,7 +8,7 @@ from typing import Literal
 
 from auth import get_db
 from deps import require_role, get_current_user
-from document_service import FileValidationError, save_uploaded_document, list_documents, process_document_text_extraction, generate_missing_summaries, get_summaries
+from document_service import FileValidationError, save_uploaded_document, list_documents, process_document_text_extraction, generate_missing_summaries, get_summaries, generate_chunks_for_document, get_chunks
 from document_service import (
     get_document_by_id,
     resolve_file_path,
@@ -16,7 +16,7 @@ from document_service import (
     update_document,
 )
 from models import User
-from schemas import DocumentRead, PaginatedDocuments, DocumentUpdate, DocumentExtractionResult, DocumentSummariesResponse
+from schemas import DocumentRead, PaginatedDocuments, DocumentUpdate, DocumentExtractionResult, DocumentSummariesResponse, DocumentChunksResponse
 
 
 router = APIRouter()
@@ -170,3 +170,23 @@ def create_document_summaries(
 ):
     summaries = generate_missing_summaries(db, document_id)
     return DocumentSummariesResponse(document_id=document_id, summaries=summaries)
+
+
+@router.get("/documents/{document_id}/chunks", response_model=DocumentChunksResponse)
+def get_document_chunks(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_role("admin")),
+):
+    chunks = get_chunks(db, document_id)
+    return DocumentChunksResponse(document_id=document_id, chunk_count=len(chunks), chunks=chunks)
+
+
+@router.post("/documents/{document_id}/generate-chunks", response_model=DocumentChunksResponse)
+def create_document_chunks(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_role("admin")),
+):
+    chunks = generate_chunks_for_document(db, document_id)
+    return DocumentChunksResponse(document_id=document_id, chunk_count=len(chunks), chunks=chunks)

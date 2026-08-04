@@ -9,11 +9,12 @@ from fastapi import UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 
-from models import Document, User
+from models import Document, User, DocumentChunk
 from schemas import PaginatedDocuments
 
 from ai.extractor import extract_text_from_pdf
 from ai.summarizer import SummarizationError, generate_summary
+from ai.chunker import chunk_text
 
 ALLOWED_MIME_TYPES = {"application/pdf"}
 ALLOWED_EXTENSION = ".pdf"
@@ -236,3 +237,45 @@ def generate_missing_summaries(db: Session, document_id: uuid.UUID) -> list[Docu
 
     db.commit()
     return get_summaries(db, document_id)
+
+
+def get_chunks(db: Session, document_id: uuid.UUID) -> list[DocumentChunk]:
+    return (
+        db.query(DocumentChunk)
+        .filter(DocumentChunk.document_id == document_id)
+        .order_by(DocumentChunk.chunk_index)
+        .all()
+    )
+
+
+def generate_chunks_for_document(db: Session, document_id: uuid.UUID) -> list[DocumentChunk]:
+    document = get_document_by_id(db, document_id)
+
+    if not document.extracted_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This document has no extracted text. Run text extraction first.",
+        )
+
+    pieces = chunk_text(document.extracted_text)
+
+    if not pieces:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No chunks could be produced from this document's text.",
+        )
+
+    db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).delete()
+
+    for piece in pieces:
+        db.add(
+            DocumentChunk(
+                document_id=document_id,
+                chunk_index=piece.index,
+                chunk_text=piece.text,
+                char_count=piece.char_count,
+            )
+        )
+
+    db.commit()
+    return get_chunks(db, document_id)
