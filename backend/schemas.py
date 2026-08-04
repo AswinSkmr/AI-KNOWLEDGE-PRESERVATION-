@@ -127,3 +127,18 @@ class DocumentExtractionResult(BaseModel):
     page_count: int | None = None
     extraction_error: str | None = None
     extracted_text_preview: str | None = None
+
+
+class SummaryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    summary_id: uuid.UUID
+    summary_type: str
+    summary: str
+    model_name: str
+    generated_at: datetime
+
+
+class DocumentSummariesResponse(BaseModel):
+    document_id: uuid.UUID
+    summaries: list[SummaryRead]

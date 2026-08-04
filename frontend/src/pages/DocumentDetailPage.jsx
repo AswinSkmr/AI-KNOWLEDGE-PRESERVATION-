@@ -16,6 +16,12 @@ function DocumentDetailPage() {
 
   const [previewBlobUrl, setPreviewBlobUrl] = useState(null);
 
+  const [extraction, setExtraction] = useState(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  const [summaries, setSummaries] = useState([]);
+  const [isGeneratingSummaries, setIsGeneratingSummaries] = useState(false);
+
   async function loadDocument() {
     setError("");
     try {
@@ -31,8 +37,18 @@ function DocumentDetailPage() {
     }
   }
 
+  async function loadSummaries() {
+    try {
+      const response = await api.get(`/documents/${id}/summaries`);
+      setSummaries(response.data.summaries);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   useEffect(() => {
     loadDocument();
+    loadSummaries();
   }, [id]);
 
   useEffect(() => {
@@ -65,7 +81,11 @@ function DocumentDetailPage() {
   }
 
   async function handleDelete() {
-    if (!window.confirm(`Delete "${document.title}"? This can be undone by an administrator later, but it will disappear from all listings immediately.`)) {
+    if (
+      !window.confirm(
+        `Delete "${document.title}"? This can be undone by an administrator later, but it will disappear from all listings immediately.`
+      )
+    ) {
       return;
     }
     try {
@@ -86,9 +106,6 @@ function DocumentDetailPage() {
     window.URL.revokeObjectURL(url);
   }
 
-  const [extraction, setExtraction] = useState(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-
   async function handleExtractText() {
     setIsExtracting(true);
     setExtraction(null);
@@ -101,6 +118,19 @@ function DocumentDetailPage() {
       setIsExtracting(false);
     }
   }
+
+  async function handleGenerateSummaries() {
+    setIsGeneratingSummaries(true);
+    try {
+      const response = await api.post(`/documents/${id}/generate-summaries`);
+      setSummaries(response.data.summaries);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to generate summaries");
+    } finally {
+      setIsGeneratingSummaries(false);
+    }
+  }
+
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (!document) return <p>Loading...</p>;
 
@@ -137,7 +167,9 @@ function DocumentDetailPage() {
             />
           </div>
           <button type="submit">Save</button>
-          <button type="button" onClick={() => setIsEditing(false)}>Cancel</button>
+          <button type="button" onClick={() => setIsEditing(false)}>
+            Cancel
+          </button>
         </form>
       ) : (
         <>
@@ -149,8 +181,7 @@ function DocumentDetailPage() {
             <strong>Size:</strong> {(document.file_size / (1024 * 1024)).toFixed(2)} MB
           </p>
           <p>
-            <strong>Uploaded:</strong>{" "}
-            {new Date(document.uploaded_at).toLocaleString()}
+            <strong>Uploaded:</strong> {new Date(document.uploaded_at).toLocaleString()}
           </p>
 
           <button onClick={handleDownload}>Download</button>
@@ -165,16 +196,42 @@ function DocumentDetailPage() {
               {isExtracting ? "Extracting..." : "Extract Text"}
             </button>
           )}
+          {canEdit && (
+            <button onClick={handleGenerateSummaries} disabled={isGeneratingSummaries}>
+              {isGeneratingSummaries ? "Generating..." : "Generate Summaries"}
+            </button>
+          )}
+
           {extraction && (
             <div style={{ marginTop: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
-              <p><strong>Status:</strong> {extraction.text_extraction_status}</p>
-              {extraction.page_count != null && <p><strong>Pages:</strong> {extraction.page_count}</p>}
+              <p>
+                <strong>Status:</strong> {extraction.text_extraction_status}
+              </p>
+              {extraction.page_count != null && (
+                <p>
+                  <strong>Pages:</strong> {extraction.page_count}
+                </p>
+              )}
               {extraction.extraction_error && (
                 <p style={{ color: "orange" }}>{extraction.extraction_error}</p>
               )}
               {extraction.extracted_text_preview && (
-                <p><strong>Preview:</strong> {extraction.extracted_text_preview}...</p>
+                <p>
+                  <strong>Preview:</strong> {extraction.extracted_text_preview}...
+                </p>
               )}
+            </div>
+          )}
+
+          {summaries.length > 0 && (
+            <div style={{ marginTop: "1rem" }}>
+              <h3>Summaries</h3>
+              {summaries.map((s) => (
+                <div key={s.summary_id} style={{ marginBottom: "0.75rem" }}>
+                  <strong>{s.summary_type}</strong>
+                  <p>{s.summary}</p>
+                </div>
+              ))}
             </div>
           )}
         </>

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime, func, ForeignKey, Boolean, Text, Integer, func
+from sqlalchemy import Column, String, DateTime, func, ForeignKey, Boolean, Text, Integer, func, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -96,3 +96,21 @@ class Document(Base):
     status = Column(String(20), nullable=False, default="active", server_default="active")
 
     uploader = relationship("User")
+
+
+class DocumentSummary(Base):
+    __tablename__ = "document_summaries"
+    __table_args__ = (
+        UniqueConstraint("document_id", "summary_type", name="uq_document_summary_type"),
+    )
+
+    summary_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(
+        UUID(as_uuid=True), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False
+    )
+    summary_type = Column(String(20), nullable=False)
+    summary = Column(Text, nullable=False)
+    model_name = Column(String(100), nullable=False)
+    generated_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    document = relationship("Document")

@@ -13,6 +13,7 @@ from models import Document, User
 from schemas import PaginatedDocuments
 
 from ai.extractor import extract_text_from_pdf
+from ai.summarizer import SummarizationError, generate_summary
 
 ALLOWED_MIME_TYPES = {"application/pdf"}
 ALLOWED_EXTENSION = ".pdf"
@@ -184,3 +185,54 @@ def process_document_text_extraction(db: Session, document_id: uuid.UUID) -> Doc
     db.commit()
     db.refresh(document)
     return document
+
+
+
+SUMMARY_TYPES = ["short", "medium", "detailed"]
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+
+
+def get_summaries(db: Session, document_id: uuid.UUID) -> list[DocumentSummary]:
+    return (
+        db.query(DocumentSummary)
+        .filter(DocumentSummary.document_id == document_id)
+        .all()
+    )
+
+
+def generate_missing_summaries(db: Session, document_id: uuid.UUID) -> list[DocumentSummary]:
+    document = get_document_by_id(db, document_id)
+
+    if not document.extracted_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This document has no extracted text. Run text extraction first.",
+        )
+
+    existing = get_summaries(db, document_id)
+    existing_types = {s.summary_type for s in existing}
+    missing_types = [t for t in SUMMARY_TYPES if t not in existing_types]
+
+    if not missing_types:
+        return existing
+
+    for summary_type in missing_types:
+        try:
+            summary_text = generate_summary(document.extracted_text, summary_type)
+        except SummarizationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to generate {summary_type} summary: {exc}",
+            )
+
+        db.add(
+            DocumentSummary(
+                document_id=document_id,
+                summary_type=summary_type,
+                summary=summary_text,
+                model_name=GEMINI_MODEL_NAME,
+            )
+        )
+
+    db.commit()
+    return get_summaries(db, document_id)
