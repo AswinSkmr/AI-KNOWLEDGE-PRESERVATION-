@@ -18,3 +18,5 @@ dist/
 
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+backend/vector_index/*.index

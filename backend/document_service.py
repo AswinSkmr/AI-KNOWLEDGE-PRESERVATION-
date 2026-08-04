@@ -9,12 +9,14 @@ from fastapi import UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 
-from models import Document, User, DocumentChunk
+from models import Document, User, DocumentChunk, EmbeddingMetadata
 from schemas import PaginatedDocuments
 
 from ai.extractor import extract_text_from_pdf
 from ai.summarizer import SummarizationError, generate_summary
 from ai.chunker import chunk_text
+from ai.embedding_service import EMBEDDING_MODEL_NAME, embed_texts
+from ai.vector_store import add_vectors
 
 ALLOWED_MIME_TYPES = {"application/pdf"}
 ALLOWED_EXTENSION = ".pdf"
@@ -279,3 +281,51 @@ def generate_chunks_for_document(db: Session, document_id: uuid.UUID) -> list[Do
 
     db.commit()
     return get_chunks(db, document_id)
+
+
+
+def generate_embeddings_for_document(db: Session, document_id: uuid.UUID) -> EmbeddingGenerationResult:
+    chunks = get_chunks(db, document_id)
+
+    if not chunks:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This document has no chunks. Run chunking first.",
+        )
+
+    already_embedded_ids = {
+        row.chunk_id
+        for row in db.query(EmbeddingMetadata.chunk_id)
+        .join(DocumentChunk, DocumentChunk.chunk_id == EmbeddingMetadata.chunk_id)
+        .filter(DocumentChunk.document_id == document_id)
+        .all()
+    }
+    pending_chunks = [c for c in chunks if c.chunk_id not in already_embedded_ids]
+
+    if not pending_chunks:
+        return EmbeddingGenerationResult(
+            document_id=document_id,
+            chunks_embedded=len(chunks),
+            embedding_model=EMBEDDING_MODEL_NAME,
+        )
+
+    texts = [c.chunk_text for c in pending_chunks]
+    vectors = embed_texts(texts)
+    vector_positions = add_vectors(vectors)
+
+    for chunk, position in zip(pending_chunks, vector_positions):
+        db.add(
+            EmbeddingMetadata(
+                chunk_id=chunk.chunk_id,
+                vector_index=position,
+                embedding_model=EMBEDDING_MODEL_NAME,
+            )
+        )
+
+    db.commit()
+
+    return EmbeddingGenerationResult(
+        document_id=document_id,
+        chunks_embedded=len(chunks),
+        embedding_model=EMBEDDING_MODEL_NAME,
+    )

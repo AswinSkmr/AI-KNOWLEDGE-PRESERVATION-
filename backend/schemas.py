@@ -157,3 +157,9 @@ class DocumentChunksResponse(BaseModel):
     document_id: uuid.UUID
     chunk_count: int
     chunks: list[ChunkRead]
+
+
+class EmbeddingGenerationResult(BaseModel):
+    document_id: uuid.UUID
+    chunks_embedded: int
+    embedding_model: str

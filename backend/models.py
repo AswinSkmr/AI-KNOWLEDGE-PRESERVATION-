@@ -135,3 +135,21 @@ class DocumentChunk(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     document = relationship("Document")
+
+
+class EmbeddingMetadata(Base):
+    __tablename__ = "embedding_metadata"
+
+    embedding_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    chunk_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.chunk_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    vector_index = Column(Integer, nullable=False, unique=True)
+    embedding_model = Column(String(100), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    chunk = relationship("DocumentChunk")

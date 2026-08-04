@@ -14,17 +14,21 @@ function DocumentDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "" });
 
-  const [previewBlobUrl, setPreviewBlobUrl] = useState(null);
-
+  // Milestone 1 — text extraction
   const [extraction, setExtraction] = useState(null);
   const [isExtracting, setIsExtracting] = useState(false);
 
+  // Milestone 2 — summaries
   const [summaries, setSummaries] = useState([]);
   const [isGeneratingSummaries, setIsGeneratingSummaries] = useState(false);
 
-  // Milestone 3
+  // Milestone 3 — chunking
   const [chunkCount, setChunkCount] = useState(null);
   const [isChunking, setIsChunking] = useState(false);
+
+  // Milestone 4 — embeddings
+  const [embeddingResult, setEmbeddingResult] = useState(null);
+  const [isEmbedding, setIsEmbedding] = useState(false);
 
   async function loadDocument() {
     setError("");
@@ -54,24 +58,6 @@ function DocumentDetailPage() {
     loadDocument();
     loadSummaries();
   }, [id]);
-
-  useEffect(() => {
-    if (!document || document.mime_type !== "application/pdf") return;
-
-    let objectUrl;
-
-    api
-      .get(`/documents/${id}/preview`, { responseType: "blob" })
-      .then((response) => {
-        objectUrl = window.URL.createObjectURL(response.data);
-        setPreviewBlobUrl(objectUrl);
-      })
-      .catch(() => setPreviewBlobUrl(null));
-
-    return () => {
-      if (objectUrl) window.URL.revokeObjectURL(objectUrl);
-    };
-  }, [document, id]);
 
   async function handleSaveEdit(event) {
     event.preventDefault();
@@ -135,7 +121,6 @@ function DocumentDetailPage() {
     }
   }
 
-  // Milestone 3
   async function handleGenerateChunks() {
     setIsChunking(true);
     try {
@@ -148,10 +133,23 @@ function DocumentDetailPage() {
     }
   }
 
+  async function handleGenerateEmbeddings() {
+    setIsEmbedding(true);
+    try {
+      const response = await api.post(`/documents/${id}/generate-embeddings`);
+      setEmbeddingResult(response.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Embedding generation failed");
+    } finally {
+      setIsEmbedding(false);
+    }
+  }
+
   if (error) return <p style={{ color: "red" }}>{error}</p>;
   if (!document) return <p>Loading...</p>;
 
   const canEdit = user?.role === "admin";
+  const previewUrl = `${api.defaults.baseURL}/documents/${id}/preview`;
 
   return (
     <div>
@@ -208,75 +206,88 @@ function DocumentDetailPage() {
               Delete
             </button>
           )}
-          {canEdit && (
-            <button onClick={handleExtractText} disabled={isExtracting}>
-              {isExtracting ? "Extracting..." : "Extract Text"}
-            </button>
-          )}
-          {canEdit && (
-            <button onClick={handleGenerateSummaries} disabled={isGeneratingSummaries}>
-              {isGeneratingSummaries ? "Generating..." : "Generate Summaries"}
-            </button>
-          )}
-          {canEdit && (
-            <button onClick={handleGenerateChunks} disabled={isChunking}>
-              {isChunking ? "Chunking..." : "Chunk Document"}
-            </button>
-          )}
-
-          {extraction && (
-            <div style={{ marginTop: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
-              <p>
-                <strong>Status:</strong> {extraction.text_extraction_status}
-              </p>
-              {extraction.page_count != null && (
-                <p>
-                  <strong>Pages:</strong> {extraction.page_count}
-                </p>
-              )}
-              {extraction.extraction_error && (
-                <p style={{ color: "orange" }}>{extraction.extraction_error}</p>
-              )}
-              {extraction.extracted_text_preview && (
-                <p>
-                  <strong>Preview:</strong> {extraction.extracted_text_preview}...
-                </p>
-              )}
-            </div>
-          )}
-
-          {summaries.length > 0 && (
-            <div style={{ marginTop: "1rem" }}>
-              <h3>Summaries</h3>
-              {summaries.map((s) => (
-                <div key={s.summary_id} style={{ marginBottom: "0.75rem" }}>
-                  <strong>{s.summary_type}</strong>
-                  <p>{s.summary}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {chunkCount !== null && (
-            <p style={{ marginTop: "1rem" }}>Document split into {chunkCount} chunks.</p>
-          )}
         </>
+      )}
+
+      <hr style={{ margin: "1.5rem 0" }} />
+      <h2>AI Processing Pipeline (Admin)</h2>
+
+      {canEdit && (
+        <button onClick={handleExtractText} disabled={isExtracting}>
+          {isExtracting ? "Extracting..." : "Extract Text"}
+        </button>
+      )}
+
+      {canEdit && (
+        <button onClick={handleGenerateSummaries} disabled={isGeneratingSummaries}>
+          {isGeneratingSummaries ? "Generating..." : "Generate Summaries"}
+        </button>
+      )}
+
+      {canEdit && (
+        <button onClick={handleGenerateChunks} disabled={isChunking}>
+          {isChunking ? "Chunking..." : "Chunk Document"}
+        </button>
+      )}
+
+      {canEdit && (
+        <button onClick={handleGenerateEmbeddings} disabled={isEmbedding}>
+          {isEmbedding ? "Embedding..." : "Generate Embeddings"}
+        </button>
+      )}
+
+      {extraction && (
+        <div style={{ marginTop: "1rem", padding: "0.75rem", border: "1px solid #ccc" }}>
+          <p>
+            <strong>Extraction Status:</strong> {extraction.text_extraction_status}
+          </p>
+          {extraction.page_count != null && (
+            <p>
+              <strong>Pages:</strong> {extraction.page_count}
+            </p>
+          )}
+          {extraction.extraction_error && (
+            <p style={{ color: "orange" }}>{extraction.extraction_error}</p>
+          )}
+          {extraction.extracted_text_preview && (
+            <p>
+              <strong>Preview:</strong> {extraction.extracted_text_preview}...
+            </p>
+          )}
+        </div>
+      )}
+
+      {chunkCount !== null && <p>Document split into {chunkCount} chunks.</p>}
+
+      {embeddingResult && (
+        <p>
+          {embeddingResult.chunks_embedded} chunks embedded using{" "}
+          {embeddingResult.embedding_model}.
+        </p>
+      )}
+
+      {summaries.length > 0 && (
+        <div style={{ marginTop: "1rem" }}>
+          <h3>Summaries</h3>
+          {summaries.map((s) => (
+            <div key={s.summary_id} style={{ marginBottom: "0.75rem" }}>
+              <strong>{s.summary_type}</strong>
+              <p>{s.summary}</p>
+            </div>
+          ))}
+        </div>
       )}
 
       {document.mime_type === "application/pdf" && (
         <div style={{ marginTop: "1.5rem" }}>
           <h3>Preview</h3>
-          {previewBlobUrl ? (
-            <iframe
-              src={previewBlobUrl}
-              title={document.title}
-              width="100%"
-              height="600"
-              style={{ border: "1px solid #ccc" }}
-            />
-          ) : (
-            <p>Loading preview...</p>
-          )}
+          <iframe
+            src={previewUrl}
+            title={document.title}
+            width="100%"
+            height="600"
+            style={{ border: "1px solid #ccc" }}
+          />
         </div>
       )}
     </div>
